@@ -1,19 +1,26 @@
-#lang typed/racket
+#lang racket
 
-(provide lang terminal non-terminal non-terminal/delta)
+(provide (struct-out lang)
+         (struct-out terminal)
+         (struct-out non-terminal)
+         (struct-out non-terminal/delta))
 
-(struct lang ([name : Identifier]
-              [entry : (U Identifier False)]
-              [terminals : (Listof terminal)]
-              [non-terminals : (Listof non-terminal)]))
+(struct lang (name;[name : Identifier]
+              entry;[entry : (U Identifier False)]
+              terminals;[terminals : (Listof terminal)]
+              non-terminals #;[non-terminals : (Listof non-terminal)])
+  #:prefab)
 
-(struct terminal ([pred : Identifier];(-> Any Boolean)]
-                  [names : (Listof Identifier)]))
+(struct terminal (pred;[pred : Identifier];(-> Any Boolean)]
+                  names #;[names : (Listof Identifier)])
+  #:prefab)
 
-(struct non-terminal ([name : Identifier]
-                      [alts : (Listof Symbol)]
-                      [productions : (Listof Any)]))
+(struct non-terminal (name ;[name : Identifier]
+                      alts ;[alts : (Listof Identifier)]
+                      productions #;[productions : (Listof Any)])
+  #:prefab)
 
-(struct non-terminal/delta ([name : Identifier]
-                            [+prod : (Listof Any)]
-                            [-prod : (Listof Any)]))
+(struct non-terminal/delta (name ;[name : Identifier]
+                            +prod ;[+prod : (Listof Any)]
+                            -prod #;[-prod : (Listof Any)])
+  #:prefab)

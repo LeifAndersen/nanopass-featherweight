@@ -1,9 +1,13 @@
-#lang typed/racket/no-check
+#lang typed/racket/base/no-check
 
 (require syntax/parse
-         "structs.rkt")
+         racket/syntax
+         "structs.rkt"
+         (for-template racket/base))
 
-(provide extend-language)
+(provide extend-language
+         extend-non-terminals
+         build-lang-structs)
 
 (: extend-language (lang Identifier (U Identifier False)
                     (Listof terminal)
@@ -31,3 +35,19 @@
   (match* (non-term delta)
     [((non-terminal name alts productions) (non-terminal/delta name +prod -prod))
      (non-terminal name alts (append +prod (remove* -prod productions)))]))
+
+(: build-lang-structs (lang Syntax -> Syntax))
+(define (build-lang-structs language stx)
+  (match language
+    [(lang name entry terminals non-terminals)
+     (define name* (format-id stx "~a-struct" name))
+     #`((struct #,name* ())
+        #,@(for/list ([non-t (in-list non-terminals)])
+             (match non-t
+               [(non-terminal non-t-name alts productions)
+                (define non-t-name* (format-id stx "~a:~a" name non-t-name))
+                #`(struct #,non-t-name* #,name* ())])))]))
+
+(: collect-productions (lang -> (Setof Identifier)))
+(define (collect-productions lang)
+  (set))

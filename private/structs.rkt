@@ -22,6 +22,7 @@
   #:transparent)
 
 (struct non-terminal/delta ([name : Identifier]
+                            [alts : (Listof Symbol)]
                             [+prod : (Listof Syntax)]
                             [-prod : (Listof Syntax)])
   #:transparent)

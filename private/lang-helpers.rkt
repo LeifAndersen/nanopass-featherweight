@@ -32,16 +32,16 @@
   (for*/list : (Listof non-terminal)
              ([non-term (in-list non-terms)]
               [delta (in-list deltas)]
-              #:when (equal? (non-terminal-name non-term)
-                             (non-terminal/delta-name delta)))
+              #:when (free-identifier=? (non-terminal-name non-term)
+                                        (non-terminal/delta-name delta)))
     (extend-non-terminal non-term delta)))
 
 (: extend-non-terminal (non-terminal non-terminal/delta -> non-terminal))
 (define (extend-non-terminal non-term delta)
   (match* (non-term delta)
-    [((non-terminal name alts productions) (non-terminal/delta name +prod -prod))
-     (non-terminal name alts (append +prod (remove* -prod productions)))]))
-
+    [((non-terminal name alts productions) (non-terminal/delta name* +alts +prod -prod))
+     (non-terminal name* (append +alts alts)
+                   (append +prod (remove* -prod productions)))]))
 
 (: collect-production-identifiers (lang -> (Setof Symbol))) ; wish was -> (Setof Identifier)
 (define (collect-production-identifiers language)

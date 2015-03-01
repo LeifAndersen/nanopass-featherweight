@@ -15,8 +15,10 @@
   (define-syntax-class non-term
     (pattern (name:id
               (~optional (~seq #:alts (alts:id ...)) #:defaults ([(alts 1) null]))
-              (~optional ((~seq (~datum +) +pord:production-clause ...)))
-              (~optional ((~seq (~datum -) -prod:production-clause ...)))
+              (~optional ((~seq (~datum +) +prod:production-clause ...))
+                         #:defaults ([(+prod 1) null]))
+              (~optional ((~seq (~datum -) -prod:production-clause ...))
+                         #:defaults ([(-prod 1) null]))
               productions:production-clause ...)))
   (define-syntax-class production-clause
     (pattern val)))
@@ -36,7 +38,9 @@
         non-terminals:non-term ...)
      (define language
        (extend-language* (attribute name) (attribute extend-lang) (attribute entry)
-                         (attribute terminals) (attribute +terms) (attribute -terms) (attribute non-terminals)))
+                         (attribute terminals) (attribute +terms) (attribute -terms)
+                         (attribute non-terminals)))
+     ;(pretty-write language)
      (with-syntax ([(structs ...) (build-lang-structs language stx)])
        #`(begin
            structs ...
@@ -59,6 +63,14 @@
                    (for/list ([i (in-list (attribute non-term.alts))]) i)
                    (for/list ([i (in-list (attribute non-term.productions))]) i)))))
 
+(define-for-syntax (build-delta stx)
+  (syntax-parse stx
+    (delta:non-term
+     (non-terminal/delta (attribute delta.name)
+                         (for/list ([i (in-list (attribute delta.alts))]) i)
+                         (for/list ([i (in-list (attribute delta.+prod))]) i)
+                         (for/list ([i (in-list (attribute delta.-prod))]) i)))))
+
 (define-for-syntax (extend-language* name orig entry terminals +terms -terms non-terminals)
   (cond
     [(identifier? orig)
@@ -68,7 +80,7 @@
                       entry
                       (for/list ([i (in-list +terms)]) (term->terminal i))
                       (for/list ([i (in-list -terms)]) (term->terminal i))
-                      null)]
+                      (for/list ([i (in-list non-terminals)]) (build-delta i)))]
     [else
      (lang name
            entry
@@ -99,7 +111,8 @@
                                                      (lang-symb-type (symb-split (syntax-e #'namespace)))))
                                    (define p-name (format-id stx "~a:~a" non-t-name* #'name))
                                    #`(struct #,p-name #,non-t-name*
-                                       (#,@(collect-terminals #'(body ...) production-identifiers)))])])))])))]))
+                                       (#,@(collect-terminals #'(body ...)
+                                                              production-identifiers)))])])))])))]))
 
 (define-for-syntax (collect-terminals body production-identifiers)
   ;(displayln body)
@@ -113,23 +126,3 @@
             `(,#'id ,@(collect-terminals (attribute rest) production-identifiers))]
            [else (collect-terminals (attribute rest) production-identifiers)])]
     [() '()]))
-
-#;
-(define-language L0
-  (terminals
-   (number (n)))
-  (Expr ()
-    (+ n1 n2)))
-
-;(define-language L*)
-#;
-(module+ test
-  ;(define-language L*)
-  (define-language L0
-    #:terminals ((number? (x)))
-    )
-  #;(define-language L1
-    #:extends L0
-    #:terminals (+ (boolean? (b)))
-    )
-  )

@@ -4,6 +4,7 @@
                      racket/syntax
                      racket/match
                      racket/pretty
+                     racket/set
                      "structs.rkt"
                      "lang-helpers.rkt"))
 (provide define-language)
@@ -73,6 +74,45 @@
            entry
            (for/list ([i (in-list terminals)]) (term->terminal i))
            (for/list ([i (in-list non-terminals)]) (non-term->non-terminal i)))]))
+
+(define-for-syntax (build-lang-structs language stx)
+  (define production-identifiers (collect-production-identifiers language))
+  (match language
+    [(lang name entry terminals non-terminals)
+     (define name* (format-id stx "~a-struct" name))
+     #`((struct #,name* ())
+        #,@(for/list ([non-t (in-list non-terminals)])
+             (match non-t
+               [(non-terminal non-t-name alts productions)
+                (define non-t-name* (format-id stx "~a:~a" name non-t-name))
+                #`(begin
+                    (struct #,non-t-name* #,name* ())
+                    #,@(for/list ([rule (in-list productions)])
+                         (syntax-parse rule
+                           [x:id
+                            (cond [(set-member? production-identifiers
+                                                (lang-symb-type (symb-split (syntax-e #'x))))
+                                   (define p-name (format-id stx "~a:~a" non-t-name* rule))
+                                   #`(struct #,p-name #,non-t-name* (#,rule))])]
+                           [(name:id body ...)
+                            (cond [(not (set-member? production-identifiers
+                                                     (lang-symb-type (symb-split (syntax-e #'namespace)))))
+                                   (define p-name (format-id stx "~a:~a" non-t-name* #'name))
+                                   #`(struct #,p-name #,non-t-name*
+                                       (#,@(collect-terminals #'(body ...) production-identifiers)))])])))])))]))
+
+(define-for-syntax (collect-terminals body production-identifiers)
+  ;(displayln body)
+  (syntax-parse body
+    [((subform ...) rest ...)
+     `(,@(collect-terminals (attribute subform) production-identifiers)
+       ,@(collect-terminals (attribute rest) production-identifiers))]
+    [(id:id rest ...)
+     (cond [(set-member? production-identifiers
+                         (lang-symb-type (symb-split (syntax-e #'id))))
+            `(,#'id ,@(collect-terminals (attribute rest) production-identifiers))]
+           [else (collect-terminals (attribute rest) production-identifiers)])]
+    [() '()]))
 
 #;
 (define-language L0

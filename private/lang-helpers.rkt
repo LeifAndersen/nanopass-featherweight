@@ -1,13 +1,19 @@
 #lang typed/racket/base/no-check
 
 (require syntax/parse
-         racket/syntax
+         ;racket/syntax
+         racket/match
+         racket/list
+         (only-in racket/set
+                  set
+                  set-union)
          "structs.rkt"
          (for-template racket/base))
 
 (provide extend-language
          extend-non-terminals
-         build-lang-structs)
+         symb-split
+         collect-production-identifiers)
 
 (: extend-language (lang Identifier (U Identifier False)
                     (Listof terminal)
@@ -36,18 +42,33 @@
     [((non-terminal name alts productions) (non-terminal/delta name +prod -prod))
      (non-terminal name alts (append +prod (remove* -prod productions)))]))
 
-(: build-lang-structs (lang Syntax -> Syntax))
-(define (build-lang-structs language stx)
-  (match language
-    [(lang name entry terminals non-terminals)
-     (define name* (format-id stx "~a-struct" name))
-     #`((struct #,name* ())
-        #,@(for/list ([non-t (in-list non-terminals)])
-             (match non-t
-               [(non-terminal non-t-name alts productions)
-                (define non-t-name* (format-id stx "~a:~a" name non-t-name))
-                #`(struct #,non-t-name* #,name* ())])))]))
 
-(: collect-productions (lang -> (Setof Identifier)))
-(define (collect-productions lang)
-  (set))
+(: collect-production-identifiers (lang -> (Setof Symbol))) ; wish was -> (Setof Identifier)
+(define (collect-production-identifiers language)
+  (match language
+    [(lang name entry terms non-terms)
+     (set-union
+      (for/fold : (Setof Symbol) ([acc : (Setof Symbol) (set)])
+                                 ([i (in-list terms)])
+        (match i
+          [(terminal pred names)
+           (set-union acc
+                      (for/set : (Setof Symbol) ([j (in-list names)]) (syntax-e j)))]))
+      (for/fold : (Setof Symbol) ([acc : (Setof Symbol) (set)])
+                                 ([i (in-list non-terms)])
+        (match i
+          [(non-terminal name alts productiosn)
+           (set-union acc
+                      (for/set : (Setof Symbol) ([j (in-list alts)])
+                        (lang-symb-type (symb-split (syntax-e j)))))])))]))
+
+(: symb-split (Symbol -> lang-symb))
+(define (symb-split symb)
+  (define symb* (regexp-match "([^_]*)(_(.*))?" (symbol->string symb)))
+  (match symb*
+    [(list _ s _ f)
+     #:when (string? s)
+     (lang-symb (string->symbol s)
+                (if (string? f)
+                    (string->symbol f)
+                    #f))]))

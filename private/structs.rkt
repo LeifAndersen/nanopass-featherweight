@@ -1,26 +1,31 @@
-#lang racket
+#lang typed/racket/base/no-check
 
 (provide (struct-out lang)
          (struct-out terminal)
          (struct-out non-terminal)
-         (struct-out non-terminal/delta))
+         (struct-out non-terminal/delta)
+         (struct-out lang-symb))
 
-(struct lang (name;[name : Identifier]
-              entry;[entry : (U Identifier False)]
-              terminals;[terminals : (Listof terminal)]
-              non-terminals #;[non-terminals : (Listof non-terminal)])
-  #:prefab)
+(struct lang ([name : Identifier]
+              [entry : (U Identifier False)]
+              [terminals : (Listof terminal)]
+              [non-terminals : (Listof non-terminal)])
+  #:transparent)
 
-(struct terminal (pred;[pred : Identifier];(-> Any Boolean)]
-                  names #;[names : (Listof Identifier)])
-  #:prefab)
+(struct terminal ([pred : Identifier];(-> Any Boolean)]
+                  [names : (Listof Identifier)])
+  #:transparent)
 
-(struct non-terminal (name ;[name : Identifier]
-                      alts ;[alts : (Listof Identifier)]
-                      productions #;[productions : (Listof Any)])
-  #:prefab)
+(struct non-terminal ([name : Identifier]
+                      [alts : (Listof Identifier)]
+                      [productions : (Listof Syntax)])
+  #:transparent)
 
-(struct non-terminal/delta (name ;[name : Identifier]
-                            +prod ;[+prod : (Listof Any)]
-                            -prod #;[-prod : (Listof Any)])
-  #:prefab)
+(struct non-terminal/delta ([name : Identifier]
+                            [+prod : (Listof Syntax)]
+                            [-prod : (Listof Syntax)])
+  #:transparent)
+
+(struct lang-symb ([type : Symbol]
+                   [name : (U Symbol False)])
+  #:transparent)

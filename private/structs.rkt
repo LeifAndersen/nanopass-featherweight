@@ -4,6 +4,7 @@
          (struct-out terminal)
          (struct-out non-terminal)
          (struct-out non-terminal/delta)
+         (struct-out production)
          (struct-out lang-symb))
 
 (struct lang ([name : Identifier]
@@ -18,11 +19,16 @@
 
 (struct non-terminal ([name : Identifier]
                       [alts : (Listof Identifier)]
-                      [productions : (Listof Syntax)])
+                      [productions : (Listof production)])
+  #:transparent)
+
+(struct production ([name : (U Identifier False)]
+                    [fields : (Listof Identifier)]
+                    [pattern : Syntax])
   #:transparent)
 
 (struct non-terminal/delta ([name : Identifier]
-                            [alts : (Listof Symbol)]
+                            [alts : (Listof Identifier)]
                             [+prod : (Listof Syntax)]
                             [-prod : (Listof Syntax)])
   #:transparent)

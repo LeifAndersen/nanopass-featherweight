@@ -10,7 +10,7 @@
         #:alts (e)
         x
         (+ x_1 x_2)
-        (let ([v e_1] #;...)
+        (let ([v e_1] ...)
           e_2)))
 
   (define-language L1

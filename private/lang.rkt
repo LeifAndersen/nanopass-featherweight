@@ -14,11 +14,11 @@
     (pattern (pred:id (name:id ...))))
   (define-syntax-class non-term
     (pattern (name:id
-              (~optional (~seq #:alts (alts:id ...)) #:defaults ([(alts 1) null]))
-              (~optional ((~seq (~datum +) +prod:production-clause ...))
-                         #:defaults ([(+prod 1) null]))
-              (~optional ((~seq (~datum -) -prod:production-clause ...))
-                         #:defaults ([(-prod 1) null]))
+              (~or (~once (~optional (~seq #:alts (alts:id ...)) #:defaults ([(alts 1) null])))
+                   (~once (~optional ((~seq (~datum +) +prod:production-clause ...))
+                                     #:defaults ([(+prod 1) null])))
+                   (~once (~optional ((~seq (~datum -) -prod:production-clause ...))
+                                     #:defaults ([(-prod 1) null]))))
               productions:production-clause ...)))
   (define-syntax-class production-clause
     (pattern val)))

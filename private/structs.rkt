@@ -25,6 +25,7 @@
   #:transparent)
 
 (struct non-terminal ([name : Identifier]
+                      [structname : (U Identifier False)]
                       [alts : (Listof Identifier)]
                       [productions : (Listof production)])
   #:transparent)

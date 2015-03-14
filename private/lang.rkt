@@ -100,13 +100,13 @@
 (define-for-syntax (collect-production-fields body production-identifiers)
   (syntax-parse body
     [((subform ...) rest ...)
-     `(,@(collect-production-fields (attribute subform) production-identifiers)
-       ,@(collect-production-fields (attribute rest) production-identifiers))]
+     `(,@(collect-production-fields #'(subform ...) production-identifiers)
+       ,@(collect-production-fields #'(rest ...) production-identifiers))]
     [(id:id rest ...)
      (cond [(set-member? production-identifiers
                          (lang-symb-type (symb-split (syntax-e #'id))))
-            `(,#'id ,@(collect-production-fields (attribute rest) production-identifiers))]
-           [else (collect-production-fields (attribute rest) production-identifiers)])]
+            `(,#'id ,@(collect-production-fields #'(rest ...) production-identifiers))]
+           [else (collect-production-fields #'(rest ...) production-identifiers)])]
     [() '()]))
 
 (define-for-syntax (extend-language* name orig entry terminals +terms -terms non-terminals)
@@ -141,8 +141,9 @@
      (lang name sname entry terminals
            (for/list ([i (in-list non-terminals*)])
              (match i
-               [(non-terminal name* alts productions*)
-                (non-terminal name* alts
+               [(non-terminal name* sname* alts productions*)
+                (define sname** (format-id name "~a:~a" name name*))
+                (non-terminal name* sname** alts
                               (for/list ([i (in-list productions*)])
                                 (match i
                                   [(production name*** sname fields pattern)

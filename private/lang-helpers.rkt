@@ -10,9 +10,6 @@
          "structs.rkt"
          (for-template racket/base))
 
-(require/typed racket/syntax
-  [format-id ((Syntaxof Any) String Any * -> Identifier)])
-
 (provide extend-language
          extend-non-terminals
          symb-split
@@ -46,12 +43,14 @@
 (: extend-non-terminal (non-terminal non-terminal/delta -> non-terminal))
 (define (extend-non-terminal non-term delta)
   (match* (non-term delta)
-    [((non-terminal name alts productions) (non-terminal/delta name* +alts +prod -prod))
+    [((non-terminal name sname alts productions) (non-terminal/delta name* +alts +prod -prod))
      (non-terminal name*
+                   #f
                    (append +alts alts)
-                   (append (for/list : (Listof production) ([p (in-list +prod)]) (production #f null p))
+                   (append (for/list : (Listof production) ([p (in-list +prod)])
+                             (production #f #f null p))
                            (remove* (for/list : (Listof production) ([p (in-list -prod)])
-                                      (production #f null p))
+                                      (production #f #f null p))
                                     productions)))]))
 
 (: collect-production-identifiers (lang -> (Setof Symbol))) ; wish was -> (Setof Identifier)
@@ -68,7 +67,7 @@
       (for/fold : (Setof Symbol) ([acc : (Setof Symbol) (set)])
                                  ([i (in-list non-terms)])
         (match i
-          [(non-terminal name alts productiosn)
+          [(non-terminal name sname alts productiosn)
            (set-union acc
                       (for/set : (Setof Symbol) ([j (in-list alts)])
                         (lang-symb-type (symb-split (syntax-e j)))))])))]))
@@ -91,11 +90,10 @@
      #`((struct #,sname ())
         #,@(for/list : (Listof (Syntaxof Any)) ([non-t (in-list non-terminals)])
              (match non-t
-               [(non-terminal non-t-name alts productions)
-                (define non-t-name* (format-id stx "~a:~a" name non-t-name))
+               [(non-terminal non-t-name non-t-sname alts productions)
                 #`(begin
-                    (struct #,non-t-name* #,sname ())
+                    (struct #,non-t-sname #,sname ())
                     #,@(for/list : (Listof (Syntaxof Any)) ([rule (in-list productions)])
                          (match rule
                            [(production name** sname** fields** pattern**)
-                            #`(struct #,sname** #,non-t-name* (#,@fields**))])))])))]))
+                            #`(struct #,sname** #,non-t-sname (#,@fields**))])))])))]))

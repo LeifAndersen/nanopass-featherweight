@@ -17,14 +17,14 @@
 (: find-nt (lang Identifier -> non-terminal))
 (define (find-nt language nt)
   (match language
-    [(lang name entry terminals non-terminals)
+    [(lang name sname entry terminals non-terminals)
      (findf (lambda (x) (free-identifier=? nt x)) non-terminals)]))
 
 (: build-body (lang (Listof Syntax) (U Syntax False) -> Syntax))
 (define (build-body language formals body)
   (or body
       (match language
-        [(lang name entry terminals non-terminals)
+        [(lang name sname entry terminals non-terminals)
          #`(#,entry #,(first formals))])))
 
 (: lookup-lang (Identifier -> (U lang False)))

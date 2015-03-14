@@ -3,6 +3,7 @@
 (require syntax/parse
          racket/match
          racket/list
+         unstable/syntax
          (only-in racket/set
                   set
                   set-union)
@@ -18,15 +19,18 @@
          collect-production-identifiers
          build-lang-structs)
 
-(: extend-language (lang Identifier (U Identifier False)
+(: extend-language (lang
+                    Identifier
+                    (U Identifier False)
+                    Identifier
                     (Listof terminal)
                     (Listof terminal)
                     (Listof non-terminal/delta)
                     -> lang))
-(define (extend-language orig name entry +terms -terms non-terms)
+(define (extend-language orig name sname entry +terms -terms non-terms)
   (match orig
-    [(lang name* entry* terminals* non-terminals*)
-     (lang name entry
+    [(lang name* sname* entry* terminals* non-terminals*)
+     (lang name sname entry
            (append +terms (remove* -terms terminals*))
            (extend-non-terminals non-terminals* non-terms))]))
 
@@ -43,7 +47,8 @@
 (define (extend-non-terminal non-term delta)
   (match* (non-term delta)
     [((non-terminal name alts productions) (non-terminal/delta name* +alts +prod -prod))
-     (non-terminal name* (append +alts alts)
+     (non-terminal name*
+                   (append +alts alts)
                    (append (for/list : (Listof production) ([p (in-list +prod)]) (production #f null p))
                            (remove* (for/list : (Listof production) ([p (in-list -prod)])
                                       (production #f null p))
@@ -52,7 +57,7 @@
 (: collect-production-identifiers (lang -> (Setof Symbol))) ; wish was -> (Setof Identifier)
 (define (collect-production-identifiers language)
   (match language
-    [(lang name entry terms non-terms)
+    [(lang name sname entry terms non-terms)
      (set-union
       (for/fold : (Setof Symbol) ([acc : (Setof Symbol) (set)])
                                  ([i (in-list terms)])
@@ -82,17 +87,15 @@
 (: build-lang-structs (lang (Syntaxof Any) -> (Syntaxof Any)))
 (define (build-lang-structs language stx)
   (match language
-    [(lang name entry terminals non-terminals)
-     (define name* (format-id stx "~a-struct" name))
-     #`((struct #,name* ())
+    [(lang name sname entry terminals non-terminals)
+     #`((struct #,sname ())
         #,@(for/list : (Listof (Syntaxof Any)) ([non-t (in-list non-terminals)])
              (match non-t
                [(non-terminal non-t-name alts productions)
                 (define non-t-name* (format-id stx "~a:~a" name non-t-name))
                 #`(begin
-                    (struct #,non-t-name* #,name* ())
+                    (struct #,non-t-name* #,sname ())
                     #,@(for/list : (Listof (Syntaxof Any)) ([rule (in-list productions)])
                          (match rule
-                           [(production name** fields** pattern**)
-                            (define p-name (format-id stx "~a:~a" non-t-name* name**))
-                            #`(struct #,p-name #,non-t-name* (#,@fields**))])))])))]))
+                           [(production name** sname** fields** pattern**)
+                            #`(struct #,sname** #,non-t-name* (#,@fields**))])))])))]))

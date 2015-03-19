@@ -1,13 +1,20 @@
 #lang typed/racket/base/no-check
 
-(provide (struct-out lang)
-         (struct-out terminal)
-         (struct-out non-terminal)
-         (struct-out non-terminal/delta)
-         (struct-out production)
-         (struct-out lang-symb)
-         (struct-out pass)
-         (struct-out processor))
+(provide
+ ;; Language
+ (struct-out lang)
+ (struct-out terminal)
+ (struct-out non-terminal)
+ (struct-out non-terminal/delta)
+ (struct-out production)
+
+ ;; Production Rule
+ (struct-out production-field)
+ (struct-out lang-symb)
+
+ ;; Pass
+ (struct-out pass)
+ (struct-out processor))
 
 ;;
 ;; Language structs
@@ -18,30 +25,30 @@
               [entry : Identifier]
               [terminals : (Listof terminal)]
               [non-terminals : (Listof non-terminal)])
-  #:transparent)
+  #:prefab)
 
 (struct terminal ([pred : Identifier];(-> Any Boolean)]
                   [names : (Listof Identifier)])
-  #:transparent)
+  #:prefab)
 
 (struct non-terminal ([name : Identifier]
                       [structname : (U Identifier False)]
                       [alts : (Listof Identifier)]
                       [productions : (Listof production)]
                       [parser : (U False (Syntax -> Syntax))])
-  #:transparent)
+  #:prefab)
 
 (struct production ([name : (U Identifier False)]
                     [structname : (U Identifier False)]
-                    [fields : (Listof Identifier)]
+                    [fields : (Listof field)]
                     [pattern : Syntax])
-  #:transparent)
+  #:prefab)
 
 (struct non-terminal/delta ([name : Identifier]
                             [alts : (Listof Identifier)]
                             [+prod : (Listof Syntax)]
                             [-prod : (Listof Syntax)])
-  #:transparent)
+  #:prefab)
 
 ;;
 ;; Production Structs
@@ -49,7 +56,12 @@
 
 (struct lang-symb ([type : Symbol]
                    [name : (U Symbol False)])
-  #:transparent)
+  #:prefab)
+
+(struct production-field ([name : Identifier]
+                          [symb : lang-sym]
+                          [depth : Integer])
+  #:prefab)
 
 ;;
 ;; Pass Structs
@@ -63,7 +75,7 @@
               [processors : (Listof processor)]
               [definitions : (Listof Syntax)]
               [body : Syntax])
-  #:transparent)
+  #:prefab)
 
 (struct processor ([name : Identifier]
                    [int : non-terminal]
@@ -72,4 +84,4 @@
                    [returns : (Listof Identifier)]
                    [type : (U 'pattern 'body)]
                    [body : (U (Listof Syntax) Syntax)])
-  #:transparent)
+  #:prefab)

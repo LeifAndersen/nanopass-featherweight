@@ -96,19 +96,31 @@
      (define body* (if mem stx #'(body ...)))
      (production name*
                  (format-unique-id stx "~a:~a:~a" l-name nt-name name*)
-                 (collect-production-fields body* production-identifiers)
+                 (collect-production-fields body* production-identifiers 0)
                  stx)]))
 
-(define-for-syntax (collect-production-fields body production-identifiers)
+(define-for-syntax (collect-production-fields body production-identifiers depth)
   (syntax-parse body
+    [((subform ...) (~datum ...) rest ...)
+     `(,@(collect-production-fields #'(subform ...) production-identifiers (add1 depth))
+       ,@(collect-production-fields #'(rest ...) production-identifiers depth))]
     [((subform ...) rest ...)
-     `(,@(collect-production-fields #'(subform ...) production-identifiers)
-       ,@(collect-production-fields #'(rest ...) production-identifiers))]
-    [(id:id rest ...)
+     `(,@(collect-production-fields #'(subform ...) production-identifiers depth)
+       ,@(collect-production-fields #'(rest ...) production-identifiers depth))]
+    [(id:id (~datum ...) rest ...)
+     (define split (symb-split (syntax-e #'id)))
      (cond [(set-member? production-identifiers
-                         (lang-symb-type (symb-split (syntax-e #'id))))
-            `(,#'id ,@(collect-production-fields #'(rest ...) production-identifiers))]
-           [else (collect-production-fields #'(rest ...) production-identifiers)])]
+                         (lang-symb-type split))
+            `(,(production-field #'id split (add1 depth))
+              ,@(collect-production-fields #'(rest ...) production-identifiers depth))]
+           [else (collect-production-fields #'(rest ...) production-identifiers depth)])]
+    [(id:id rest ...)
+     (define split (symb-split (syntax-e #'id)))
+     (cond [(set-member? production-identifiers
+                         (lang-symb-type split))
+            `(,(production-field #'id split depth)
+              ,@(collect-production-fields #'(rest ...) production-identifiers depth))]
+           [else (collect-production-fields #'(rest ...) production-identifiers depth)])]
     [() '()]))
 
 (define-for-syntax (extend-language* name orig entry terminals +terms -terms non-terminals)
@@ -171,7 +183,7 @@
      (define parser #`(lambda (stx) (syntax-parse stx
                                       #,@(for/list ([p (in-list productions)])
                                            (build-production-parser p)))))
-     (displayln (syntax->datum parser))
+     (displayln parser)
      (eval-syntax parser)]))
 
 (define-for-syntax (build-production-parser prod)

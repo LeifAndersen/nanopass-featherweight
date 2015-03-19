@@ -95,4 +95,6 @@
                     #,@(for/list : (Listof (Syntaxof Any)) ([rule (in-list productions)])
                          (match rule
                            [(production name** sname** fields** pattern**)
-                            #`(struct #,sname** #,non-t-sname (#,@fields**))])))])))]))
+                            #`(struct #,sname** #,non-t-sname
+                                #,(for/list : (Listof (Syntaxof Any)) ([f (in-list fields**)])
+                                    (production-field-name f)))])))])))]))

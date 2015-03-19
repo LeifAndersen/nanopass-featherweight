@@ -11,7 +11,6 @@
          (for-template racket/base))
 
 (provide extend-language
-         extend-non-terminals
          symb-split
          collect-production-identifiers
          build-lang-structs)
@@ -43,7 +42,7 @@
 (: extend-non-terminal (non-terminal non-terminal/delta -> non-terminal))
 (define (extend-non-terminal non-term delta)
   (match* (non-term delta)
-    [((non-terminal name sname alts productions) (non-terminal/delta name* +alts +prod -prod))
+    [((non-terminal name sname alts productions parser) (non-terminal/delta name* +alts +prod -prod))
      (non-terminal name*
                    #f
                    (append +alts alts)
@@ -67,7 +66,7 @@
       (for/fold : (Setof Symbol) ([acc : (Setof Symbol) (set)])
                                  ([i (in-list non-terms)])
         (match i
-          [(non-terminal name sname alts productiosn)
+          [(non-terminal name sname alts productions parser)
            (set-union acc
                       (for/set : (Setof Symbol) ([j (in-list alts)])
                         (lang-symb-type (symb-split (syntax-e j)))))])))]))
@@ -90,7 +89,7 @@
      #`((struct #,sname ())
         #,@(for/list : (Listof (Syntaxof Any)) ([non-t (in-list non-terminals)])
              (match non-t
-               [(non-terminal non-t-name non-t-sname alts productions)
+               [(non-terminal non-t-name non-t-sname alts productions parser)
                 #`(begin
                     (struct #,non-t-sname #,sname ())
                     #,@(for/list : (Listof (Syntaxof Any)) ([rule (in-list productions)])

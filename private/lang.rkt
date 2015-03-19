@@ -56,7 +56,8 @@
                                                  (syntax->list (quote-syntax (terminals ...)))
                                                  (syntax->list (quote-syntax (+terms ...)))
                                                  (syntax->list (quote-syntax (-terms ...)))
-                                                 (syntax->list (quote-syntax (non-terminals ...))))))))]))
+                                                 (syntax->list
+                                                  (quote-syntax (non-terminals ...))))))))]))
 
 (define-for-syntax (term->terminal stx)
   (syntax-parse stx
@@ -71,7 +72,8 @@
                    #f
                    (for/list ([i (in-list (attribute non-term.alts))]) i)
                    (for/list ([i (in-list (attribute non-term.productions))])
-                     (production #f #f null i))))))
+                     (production #f #f null i))
+                   #f))))
 
 (define-for-syntax (build-delta stx)
   (syntax-parse stx
@@ -132,7 +134,8 @@
              entry*
              (for/list ([i (in-list terminals)]) (term->terminal i))
              non-term*)]))
-  (fill-productions language))
+  (define language* (fill-productions language))
+  (fill-parser language*))
 
 (define-for-syntax (fill-productions language)
   (define production-identifiers (collect-production-identifiers language))
@@ -141,7 +144,7 @@
      (lang name sname entry terminals
            (for/list ([i (in-list non-terminals*)])
              (match i
-               [(non-terminal name* sname* alts productions*)
+               [(non-terminal name* sname* alts productions* parser)
                 (define sname** (format-id name "~a:~a" name name*))
                 (non-terminal name* sname** alts
                               (for/list ([i (in-list productions*)])
@@ -150,4 +153,39 @@
                                    (prod->production pattern
                                                      production-identifiers
                                                      name
-                                                     name*)])))])))]))
+                                                     name*)]))
+                              parser)])))]))
+
+(define-for-syntax (fill-parser language)
+  (match language
+    [(lang name sname entry terminals non-terminals*)
+     (lang name sname entry terminals
+           (for/list ([i (in-list non-terminals*)])
+             (match i
+               [(non-terminal name* sname* alts productions* parser*)
+                (non-terminal name* sname* alts productions* (build-non-terminal-parser i))])))]))
+
+(define-for-syntax (build-non-terminal-parser non-term)
+  (match non-term
+    [(non-terminal name sname alts productions parser)
+     (define parser #`(lambda (stx) (syntax-parse stx
+                                      #,@(for/list ([p (in-list productions)])
+                                           (build-production-parser p)))))
+     (displayln (syntax->datum parser))
+     (eval-syntax parser)]))
+
+(define-for-syntax (build-production-parser prod)
+  (match prod
+    [(production name sname fields pattern)
+     #`[#,pattern #'(#,sname #,@fields)]]))
+
+(define-for-syntax (add-unquote pattern fields)
+  (syntax-parse pattern
+    [((subform ...) rest ...)
+     #`(#,(add-unquote #'(subform ...) fields)
+         #,@(add-unquote #'(rest ...) fields))]
+    [(x:id rest ...)
+     (cond [(member #'x fields free-identifier=?)
+            #`(,x #,@(add-unquote #'(rest ...) fields))]
+           [else #`(x #,@(add-unquote #'(rest ...) fields))])]
+    [() #'()]))

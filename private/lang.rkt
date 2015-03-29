@@ -88,14 +88,18 @@
     [x:id
      (cond [(set-member? production-identifiers
                          (lang-symb-type (symb-split (syntax-e #'x))))
-            (production #'x null stx)])]
+            (production #'x
+                        (format-id l-name "~a:~a:~a" l-name nt-name #'x)
+                        (list (production-field #'x (symb-split (syntax-e #'x)) 0))
+                        stx)])]
     [(name:id body ...)
      (define mem (set-member? production-identifiers
                               (lang-symb-type (symb-split (syntax-e #'namespace)))))
      (define name* (if mem #'#%app #'name))
      (define body* (if mem stx #'(body ...)))
      (production name*
-                 (format-unique-id stx "~a:~a:~a" l-name nt-name name*)
+                 (format-id l-name "~a:~a:~a" l-name nt-name name*)
+                 ;(format-unique-id stx "~a:~a:~a" l-name nt-name name*)
                  (collect-production-fields body* production-identifiers 0)
                  stx)]))
 
@@ -183,7 +187,6 @@
      (define parser #`(lambda (stx) (syntax-parse stx
                                       #,@(for/list ([p (in-list productions)])
                                            (build-production-parser p)))))
-     (displayln parser)
      (eval-syntax parser)]))
 
 (define-for-syntax (build-production-parser prod)

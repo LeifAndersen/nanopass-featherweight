@@ -46,11 +46,17 @@
      (non-terminal name*
                    #f
                    (append +alts alts)
-                   (append (for/list : (Listof production) ([p (in-list +prod)])
-                             (production #f #f null p))
-                           (remove* (for/list : (Listof production) ([p (in-list -prod)])
-                                      (production #f #f null p))
-                                    productions)))]))
+                   (for/list : (Listof production)
+                             ([p (in-list
+                                  (append +prod
+                                          (remove* -prod
+                                                   (for/list : (Listof Syntax) ([p (in-list productions)])
+                                                     (production-pattern p))
+                                                   (lambda (x y)
+                                                     (equal? (syntax->datum x)
+                                                             (syntax->datum y))))))])
+                     (production #f #f null p))
+                   #f)]))
 
 (: collect-production-identifiers (lang -> (Setof Symbol))) ; wish was -> (Setof Identifier)
 (define (collect-production-identifiers language)
@@ -86,15 +92,16 @@
 (define (build-lang-structs language stx)
   (match language
     [(lang name sname entry terminals non-terminals)
-     #`((struct #,sname ())
+     #`((struct #,sname () #:prefab)
         #,@(for/list : (Listof (Syntaxof Any)) ([non-t (in-list non-terminals)])
              (match non-t
                [(non-terminal non-t-name non-t-sname alts productions parser)
                 #`(begin
-                    (struct #,non-t-sname #,sname ())
+                    (struct #,non-t-sname #,sname () #:prefab)
                     #,@(for/list : (Listof (Syntaxof Any)) ([rule (in-list productions)])
                          (match rule
                            [(production name** sname** fields** pattern**)
                             #`(struct #,sname** #,non-t-sname
                                 #,(for/list : (Listof (Syntaxof Any)) ([f (in-list fields**)])
-                                    (production-field-name f)))])))])))]))
+                                    (production-field-name f))
+                                #:prefab)])))])))]))

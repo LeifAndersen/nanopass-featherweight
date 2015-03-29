@@ -3,7 +3,9 @@
 (require (for-syntax syntax/parse
                      racket/base))
 
-(define-syntax (compiler stx)
+(provide define-compiler)
+
+(define-syntax (define-compiler stx)
   (syntax-parse stx
     [(_ passes ...)
      (quasisyntax/loc stx

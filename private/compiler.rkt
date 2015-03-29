@@ -7,6 +7,7 @@
 
 (define-syntax (define-compiler stx)
   (syntax-parse stx
-    [(_ passes ...)
+    [(_ name:id passes:id ...)
      (quasisyntax/loc stx
-       (compose #,@(reverse (attribute passes))))]))
+       (define name
+         (compose #,@(reverse (attribute passes)))))]))

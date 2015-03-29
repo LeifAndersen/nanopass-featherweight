@@ -184,9 +184,10 @@
 (define-for-syntax (build-non-terminal-parser non-term)
   (match non-term
     [(non-terminal name sname alts productions parser)
-     (define parser #`(lambda (stx) (syntax-parse stx
-                                      #,@(for/list ([p (in-list productions)])
-                                           (build-production-parser p)))))
+     (define parser #'(lambda (stx) stx))
+       #;#`(lambda (stx) (syntax-parse stx
+                           #,@(for/list ([p (in-list productions)])
+                                (build-production-parser p))))
      (eval-syntax parser)]))
 
 (define-for-syntax (build-production-parser prod)

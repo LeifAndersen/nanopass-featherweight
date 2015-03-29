@@ -1,3 +1,3 @@
-nanopass-model
-==============
+nanopass-featherweight
+======================
 README text here.

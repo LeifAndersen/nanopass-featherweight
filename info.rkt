@@ -1,5 +1,5 @@
 #lang info
-(define collection "nanopass-model")
+(define collection "nanopass-featherweight")
 (define deps '("base"
                "rackunit-lib"))
 (define build-deps '("scribble-lib" "racket-doc"))

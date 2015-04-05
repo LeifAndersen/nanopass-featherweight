@@ -94,7 +94,7 @@
                         stx)])]
     [(name:id body ...)
      (define mem (set-member? production-identifiers
-                              (lang-symb-type (symb-split (syntax-e #'namespace)))))
+                              (lang-symb-type (symb-split (syntax-e #'name)))))
      (define name* (if mem #'#%app #'name))
      (define body* (if mem stx #'(body ...)))
      (production name*

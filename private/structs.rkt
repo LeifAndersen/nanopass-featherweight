@@ -78,6 +78,7 @@
   #:prefab)
 
 (struct processor ([name : Identifier]
+                   [defname : Identifier]
                    [int : non-terminal]
                    [ont : non-terminal]
                    [formals : (Listof Identifier)]

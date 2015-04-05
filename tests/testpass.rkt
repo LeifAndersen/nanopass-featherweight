@@ -19,15 +19,24 @@
 (define-pass pass : L0 -> L1
   (Expr : Expr -> Expr
    [(L0:Expr:when e_1 e_2)
-    (L1:Expr:if e_1 e_2 #f)]))
+    (L1:Expr:if (pass:Expr e_1)
+                (pass:Expr e_2)
+                (L1:Expr:b #f))]))
 
 (check-equal?
- (pass (L0:Expr:if #f #t #f))
- (L1:Expr:if #f #t #f))
+ (pass (L0:Expr:if (L0:Expr:b #f)
+                   (L0:Expr:b #t)
+                   (L0:Expr:b #f)))
+ (L1:Expr:if (L1:Expr:b #f)
+             (L1:Expr:b #t)
+             (L1:Expr:b #f)))
 
 (check-equal?
- (pass (L0:Expr:when #f #t))
- (L1:Expr:if #f #t #f))
+ (pass (L0:Expr:when (L0:Expr:b #f)
+                     (L0:Expr:b #t)))
+ (L1:Expr:if (L1:Expr:b #f)
+             (L1:Expr:b #t)
+             (L1:Expr:b #f)))
 
 (check-equal?
  (pass (L0:Expr:b #t))

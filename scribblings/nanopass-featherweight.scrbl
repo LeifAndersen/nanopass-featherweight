@@ -7,4 +7,11 @@
 
 @defmodule[nanopass-featherweight]
 
-Package Description Here
+A featherweight implementation of a nanopass framework.
+
+Defines 3 forms:
+@itemlist[
+@item{@racket[define-language]}
+@item{@racket[define-pass]}
+@item{@racket[define-compiler]}
+]

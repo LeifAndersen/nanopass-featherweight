@@ -1,5 +1,7 @@
 #lang typed/racket/base/no-check
 
+;; Structs used to store internal representation of a language.
+
 (provide
  ;; Language
  (struct-out lang)

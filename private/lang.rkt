@@ -1,5 +1,23 @@
 #lang racket/base
 
+;; Used for defining languages.
+;; Syntax for define-language:
+;; (define-language L-name
+;;    #:extends [extend-name #f]
+;;    #:entry   [entry #f]
+;;    #:terminals (<terminal> ...)
+;;    <non-terminal ...>)
+;;
+;; <terminal> ::= (predicate? (<alt> ...)
+;;
+;; <non-terminal> ::= (<name> #:alts (<alt> ...) <production-rule>)
+;;
+;; Where predicate is any predicate like boolean? or void?
+;;
+;; alt is a symbol to refer to the terminal/non-terminal
+;;
+;; And a production rule is an s-expression containing terminals and non-terminals.
+
 (require (for-syntax syntax/parse
                      racket/syntax
                      racket/match
@@ -11,6 +29,7 @@
                      "lang-helpers.rkt"))
 (provide define-language)
 
+;; Syntax-classes used for define-language
 (begin-for-syntax
   (define-syntax-class term
     (pattern (pred:id (name:id ...))))
@@ -25,6 +44,7 @@
   (define-syntax-class production-clause
     (pattern val)))
 
+;; Define-language macro
 (define-syntax (define-language stx)
   (syntax-parse stx
     [(_ name:id
@@ -59,12 +79,14 @@
                                                  (syntax->list
                                                   (quote-syntax (non-terminals ...))))))))]))
 
+;; Convert a term syntax class to a terminal struct.
 (define-for-syntax (term->terminal stx)
   (syntax-parse stx
     [term:term
      (terminal (attribute term.pred)
                (for/list ([i (in-list (syntax->list #'(term.name ...)))]) i))]))
 
+;; Convert a non-terminal syntax class to a non-terminal struct.
 (define-for-syntax (non-term->non-terminal stx)
   (syntax-parse stx
     (non-term:non-term
@@ -75,6 +97,7 @@
                      (production #f #f null i))
                    #f))))
 
+;; Create delta struct for a non-terminal based on +/- syntax.
 (define-for-syntax (build-delta stx)
   (syntax-parse stx
     (delta:non-term
@@ -83,6 +106,8 @@
                          (for/list ([i (in-list (attribute delta.+prod))]) i)
                          (for/list ([i (in-list (attribute delta.-prod))]) i)))))
 
+;; Create a production rule from a production syntax class.
+;; Also gather information on the patterns for use later.
 (define-for-syntax (prod->production stx production-identifiers l-name nt-name)
   (syntax-parse stx
     [x:id
@@ -103,6 +128,8 @@
                  (collect-production-fields body* production-identifiers 0)
                  stx)]))
 
+;; Collect all of the fields in a production rule.
+;; For use by prod->production
 (define-for-syntax (collect-production-fields body production-identifiers depth)
   (syntax-parse body
     [((subform ...) (~datum ...) rest ...)
@@ -127,6 +154,8 @@
            [else (collect-production-fields #'(rest ...) production-identifiers depth)])]
     [() '()]))
 
+;; Create an extended language.
+;; If orig is false, it's not a language extension, make a new language.
 (define-for-syntax (extend-language* name orig entry terminals +terms -terms non-terminals)
   (define sname (format-id name "~a-struct" name))
   (define language
@@ -153,6 +182,8 @@
   (define language* (fill-productions language))
   (fill-parser language*))
 
+;; Fill productions with information about production rules.
+;; Used because production structs created in two passes.
 (define-for-syntax (fill-productions language)
   (define production-identifiers (collect-production-identifiers language))
   (match language
@@ -172,6 +203,8 @@
                                                      name*)]))
                               parser)])))]))
 
+;; Used for creating parser for pattern matching.
+;; Currently does not match (...) patterns.
 (define-for-syntax (fill-parser language)
   (match language
     [(lang name sname entry terminals non-terminals*)
@@ -181,6 +214,8 @@
                [(non-terminal name* sname* alts productions* parser*)
                 (non-terminal name* sname* alts productions* (build-non-terminal-parser i))])))]))
 
+;; Build parser for non-terminals
+;; Currently does awful eval because it builds up match.
 (define-for-syntax (build-non-terminal-parser non-term)
   (match non-term
     [(non-terminal name sname alts productions parser)
@@ -190,11 +225,14 @@
                                 (build-production-parser p))))
      (eval-syntax parser)]))
 
+;; Build piece of parser for production rule.
+;; Returns syntax object to be put together by build-non-terminal-parser.
 (define-for-syntax (build-production-parser prod)
   (match prod
     [(production name sname fields pattern)
      #`[#,pattern #'(#,sname #,@fields)]]))
 
+;; Adds unquotes to syntax provided by build-production-parser.
 (define-for-syntax (add-unquote pattern fields)
   (syntax-parse pattern
     [((subform ...) rest ...)

@@ -1,5 +1,11 @@
 #lang typed/racket/base/no-check
 
+;; Helper functions for lang.rkt
+;; In separate module because it's implemented in typed/racket.
+;; However, typed/racket cannot produce correct contracts for syntax,
+;; so the type checker is not run at compile time.
+;; (Thus it's likely that the type annotations are out of date.)
+
 (require syntax/parse
          racket/match
          racket/list
@@ -15,6 +21,7 @@
          collect-production-identifiers
          build-lang-structs)
 
+;; Find base language, and create new language that extends previous one.
 (: extend-language (lang
                     Identifier
                     (U Identifier False)
@@ -30,6 +37,7 @@
            (append +terms (remove* -terms terminals*))
            (extend-non-terminals non-terminals* non-terms))]))
 
+;; Given previous list of non-terminals, create list of non-terminals for new language.
 (: extend-non-terminals ((Listof non-terminal) (Listof non-terminal/delta) -> (Listof non-terminal)))
 (define (extend-non-terminals non-terms deltas)
   (for*/list : (Listof non-terminal)
@@ -39,6 +47,7 @@
                                         (non-terminal/delta-name delta)))
     (extend-non-terminal non-term delta)))
 
+; Like extend-non-terminal, but only extends one non-terminal.
 (: extend-non-terminal (non-terminal non-terminal/delta -> non-terminal))
 (define (extend-non-terminal non-term delta)
   (match* (non-term delta)
@@ -58,6 +67,8 @@
                      (production #f #f null p))
                    #f)]))
 
+;; Collect identifiers in production rules.
+;; These are turned into structs.
 (: collect-production-identifiers (lang -> (Setof Symbol))) ; wish was -> (Setof Identifier)
 (define (collect-production-identifiers language)
   (match language
@@ -77,6 +88,8 @@
                       (for/set : (Setof Symbol) ([j (in-list alts)])
                         (lang-symb-type (symb-split (syntax-e j)))))])))]))
 
+;; Split symbol into type and name.
+;; Allow to type things like (if e_1 e_2 e_3).
 (: symb-split (Symbol -> lang-symb))
 (define (symb-split symb)
   (define symb* (regexp-match "([^_]*)(_(.*))?" (symbol->string symb)))
@@ -88,6 +101,8 @@
                     (string->symbol f)
                     #f))]))
 
+;; Generate structs for a language.
+;; Each non-terminal get's a struct, as well as each production.
 (: build-lang-structs (lang (Syntaxof Any) -> (Syntaxof Any)))
 (define (build-lang-structs language stx)
   (match language

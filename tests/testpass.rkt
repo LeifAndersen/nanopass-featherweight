@@ -1,8 +1,12 @@
 #lang racket
 
+; Test demonstrating how to build passes.
+; Does when elimination.
+
 (require "../main.rkt"
          rackunit)
 
+; Language L0, consists of bools and if.
 (define-language L0
   #:terminals ((bool? (b)))
   (Expr
@@ -11,17 +15,23 @@
    (when e_1 e_2)
    (if e_1 e_2 e_3)))
 
+; Language L1, remove when clause.
+; (Consists of bool and if).
 (define-language L1
   #:extends L0
   (Expr
    (- (when e_1 e_2))))
 
+; Remove one when blocks.
 (define-pass pass : L0 -> L1
   (Expr : Expr -> Expr
    [(L0:Expr:when e_1 e_2)
     (L1:Expr:if (pass:Expr e_1)
                 (pass:Expr e_2)
                 (L1:Expr:b #f))]))
+
+; ---------------------------------------------------
+; Unit tests
 
 (check-equal?
  (pass (L0:Expr:if (L0:Expr:b #f)

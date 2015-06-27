@@ -7,5 +7,6 @@
          "private/compiler.rkt")
 
 (provide define-language
+         define-extended-language
          define-pass
          define-compiler)

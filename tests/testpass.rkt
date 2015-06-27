@@ -9,18 +9,16 @@
 ; Language L0, consists of bools and if.
 (define-language L0
   #:terminals ((bool? (b)))
-  (Expr
-   #:alts (e)
+  (Expr (e)
    b
    (when e_1 e_2)
    (if e_1 e_2 e_3)))
 
 ; Language L1, remove when clause.
 ; (Consists of bool and if).
-(define-language L1
-  #:extends L0
-  (Expr
-   (- (when e_1 e_2))))
+(define-extended-language L1 L0
+  (Expr (e)
+   #:- ((when e_1 e_2))))
 
 ; Remove one when blocks.
 (define-pass pass : L0 -> L1

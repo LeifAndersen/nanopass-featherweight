@@ -27,42 +27,63 @@
                      unstable/syntax
                      "structs.rkt"
                      "lang-helpers.rkt"))
-(provide define-language)
+(provide define-language
+         define-extended-language)
 
 ;; Syntax-classes used for define-language
 (begin-for-syntax
   (define-syntax-class term
     (pattern (pred:id (name:id ...))))
+  (define-syntax-class extended-non-term
+    (pattern (name:id (alts:id ...)
+                      (~or (~seq #:+ +prod:production-clause)
+                           (~seq #:- -prod:production-clause))
+                      ...)))
   (define-syntax-class non-term
-    (pattern (name:id
-              (~optional (~seq #:alts (alts:id ...)) #:defaults ([(alts 1) null]))
-              (~optional ((~seq (~datum +) +prod:production-clause ...))
-                         #:defaults ([(+prod 1) null]))
-              (~optional ((~seq (~datum -) -prod:production-clause ...))
-                         #:defaults ([(-prod 1) null]))
-              productions:production-clause ...)))
+    (pattern (name:id (alts:id ...)
+                      productions:production-clause ...)))
   (define-syntax-class production-clause
-    (pattern val)))
+    (pattern val)
+    (pattern (name:id fields ...))))
 
 ;; Define-language macro
 (define-syntax (define-language stx)
   (syntax-parse stx
     [(_ name:id
-        (~or (~once (~optional (~seq #:extends extend-lang:id) #:defaults ([extend-lang #'#f])))
-             (~once (~optional (~seq #:entry entry:id) #:defaults ([entry #'#f])))
-             (~once (~optional (~seq #:terminals (terminals:term ...))
-                               #:defaults ([(terminals 1) null])))
-             (~once (~optional (~seq #:+terminals (+terms:term ...))
-                               #:defaults ([(+terms 1) null])))
-             (~once (~optional (~seq #:-terminals (-terms:term ...))
-                               #:defaults ([(-terms 1) null]))))
+        (~or (~optional (~seq #:extends extend-lang:id) #:defaults ([extend-lang #'#f]))
+             (~optional (~seq #:entry entry:id) #:defaults ([entry #'#f]))
+             (~optional (~seq #:terminals (terminals:term ...))
+                        #:defaults ([(terminals 1) null])))
         ...
         non-terminals:non-term ...)
+     (define language
+       (build-language* (attribute name)
+                        (attribute entry)
+                        (attribute terminals)
+                        (attribute non-terminals)))
+     (with-syntax ([(structs ...) (build-lang-structs language stx)])
+       (syntax/loc stx
+         (begin
+           structs ...
+           (define-syntax name (build-language* (quote-syntax name)
+                                                (quote-syntax entry)
+                                                (syntax->list (quote-syntax (terminals ...)))
+                                                (syntax->list
+                                                 (quote-syntax (non-terminals ...))))))))]))
+
+(define-syntax (define-extended-language stx)
+  (syntax-parse stx
+    [(_ name:id extend-lang:id
+        (~or (~optional (~seq #:entry entry:id) #:defaults ([entry #'#f]))
+             (~optional (~seq #:terminals ((~or (~seq #:+ +terms:term)
+                                                (~seq #:- -terms:term))
+                                           ...))))
+        ...
+        non-terminals:extended-non-term ...)
      (define language
        (extend-language* (attribute name)
                          (attribute extend-lang)
                          (attribute entry)
-                         (attribute terminals)
                          (attribute +terms)
                          (attribute -terms)
                          (attribute non-terminals)))
@@ -72,8 +93,7 @@
            structs ...
            (define-syntax name (extend-language* (quote-syntax name)
                                                  (quote-syntax extend-lang)
-                                                 entry
-                                                 (syntax->list (quote-syntax (terminals ...)))
+                                                 (quote-syntax entry)
                                                  (syntax->list (quote-syntax (+terms ...)))
                                                  (syntax->list (quote-syntax (-terms ...)))
                                                  (syntax->list
@@ -100,7 +120,7 @@
 ;; Create delta struct for a non-terminal based on +/- syntax.
 (define-for-syntax (build-delta stx)
   (syntax-parse stx
-    (delta:non-term
+    (delta:extended-non-term
      (non-terminal/delta (attribute delta.name)
                          (for/list ([i (in-list (attribute delta.alts))]) i)
                          (for/list ([i (in-list (attribute delta.+prod))]) i)
@@ -154,31 +174,33 @@
            [else (collect-production-fields #'(rest ...) production-identifiers depth)])]
     [() '()]))
 
-;; Create an extended language.
-;; If orig is false, it's not a language extension, make a new language.
-(define-for-syntax (extend-language* name orig entry terminals +terms -terms non-terminals)
+(define-for-syntax (build-language* name entry terminals non-terminals)
   (define sname (format-id name "~a-struct" name))
+  (define non-term* (for/list ([i (in-list non-terminals)]) (non-term->non-terminal i)))
+  (define entry* (or entry
+                       (non-terminal-name (car non-term*))))
   (define language
-    (cond
-      [(identifier? orig)
-       (define base (syntax-local-value orig))
-       (define entry* (or entry (lang-entry base)))
-       (extend-language base
-                        name
-                        sname
-                        entry*
-                        (for/list ([i (in-list +terms)]) (term->terminal i))
-                        (for/list ([i (in-list -terms)]) (term->terminal i))
-                        (for/list ([i (in-list non-terminals)]) (build-delta i)))]
-      [else
-       (define non-term* (for/list ([i (in-list non-terminals)]) (non-term->non-terminal i)))
-       (define entry* (or entry
-                          (non-terminal-name (car non-term*))))
-       (lang name
-             sname
-             entry*
-             (for/list ([i (in-list terminals)]) (term->terminal i))
-             non-term*)]))
+    (lang name
+          sname
+          entry*
+          (for/list ([i (in-list terminals)]) (term->terminal i))
+          non-term*))
+  (define language* (fill-productions language))
+  (fill-parser language*))
+
+;; Create an extended language.
+(define-for-syntax (extend-language* name orig entry +terms -terms non-terminals)
+  (define sname (format-id name "~a-struct" name))
+  (define base (syntax-local-value orig))
+  (define entry* (or entry (lang-entry base)))
+  (define language
+    (extend-language base
+                     name
+                     sname
+                     entry*
+                     (for/list ([i (in-list +terms)]) (term->terminal i))
+                     (for/list ([i (in-list -terms)]) (term->terminal i))
+                     (for/list ([i (in-list non-terminals)]) (build-delta i))))
   (define language* (fill-productions language))
   (fill-parser language*))
 

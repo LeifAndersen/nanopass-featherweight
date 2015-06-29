@@ -91,7 +91,7 @@
 (: find-production (Syntax non-terminal -> production))
 (define (find-production patt nt)
   (match nt
-    [(non-terminal name sname alts productions parser)
+    [(non-terminal name sname alts productions)
      (findf (lambda (prod)
               (match prod
                 [(production name sname fields patt*)
@@ -113,12 +113,12 @@
 (: production-field->processor (production-field processors -> (U processor #f)))
 (define (production-field->processor pf processors)
   (match pf
-    [(production-field name symb depth)
+    [(production-field name sname depth)
      (findf (lambda (p)
               (match p
                 [(processor name defname int ont formals returns type body)
                  (findf (lambda (alt)
-                          (equal? (lang-symb-type symb)
+                          (equal? (syntax-e name)
                                   (syntax-e alt)))
                         (non-terminal-alts int))]))
             processors)]))

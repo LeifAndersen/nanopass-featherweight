@@ -12,7 +12,6 @@
 
  ;; Production Rule
  (struct-out production-field)
- (struct-out lang-symb)
 
  ;; Pass
  (struct-out pass)
@@ -36,8 +35,7 @@
 (struct non-terminal ([name : Identifier]
                       [structname : (U Identifier False)]
                       [alts : (Listof Identifier)]
-                      [productions : (Listof production)]
-                      [parser : (U False (Syntax -> Syntax))])
+                      [productions : (Listof production)])
   #:prefab)
 
 (struct production ([name : (U Identifier False)]
@@ -56,12 +54,8 @@
 ;; Production Structs
 ;;
 
-(struct lang-symb ([type : Symbol]
-                   [name : (U Symbol False)])
-  #:prefab)
-
 (struct production-field ([name : Identifier]
-                          [symb : lang-sym]
+                          [structname : Identifier]
                           [depth : Integer])
   #:prefab)
 

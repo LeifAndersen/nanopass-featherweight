@@ -9,14 +9,16 @@
   #:terminals ((number? (x))
                (symbol? (v)))
   (Expr (e)
-   x
-   (+ x_1 x_2)
-   (let ([v e_1] ...)
-     e_2)))
+        x
+        (+ x x)
+        (let ([v e] ...)
+     e)))
 
 ; Extended language
 (define-extended-language L1 L0
-  #:terminals (#:+ (boolean? (y)))
+  #:terminals (#:+ (boolean? (y))
+                   #:- (symbol? (v))
+                   #:+ (identifier? (i)))
   (Expr (w)
-   #:+ y
-   #:+ (and w_1 e_2)))
+        #:+ y
+        #:+ (and w e)))

@@ -17,7 +17,6 @@
          (for-template racket/base))
 
 (provide extend-language
-         symb-split
          collect-production-identifiers
          build-lang-structs)
 
@@ -51,7 +50,7 @@
 (: extend-non-terminal (non-terminal non-terminal/delta -> non-terminal))
 (define (extend-non-terminal non-term delta)
   (match* (non-term delta)
-    [((non-terminal name sname alts productions parser) (non-terminal/delta name* +alts +prod -prod))
+    [((non-terminal name sname alts productions) (non-terminal/delta name* +alts +prod -prod))
      (non-terminal name*
                    #f
                    (append +alts alts)
@@ -64,8 +63,7 @@
                                                    (lambda (x y)
                                                      (equal? (syntax->datum x)
                                                              (syntax->datum y))))))])
-                     (production #f #f null p))
-                   #f)]))
+                     (production #f #f null p)))]))
 
 ;; Collect identifiers in production rules.
 ;; These are turned into structs.
@@ -83,23 +81,10 @@
       (for/fold : (Setof Symbol) ([acc : (Setof Symbol) (set)])
                                  ([i (in-list non-terms)])
         (match i
-          [(non-terminal name sname alts productions parser)
+          [(non-terminal name sname alts productions)
            (set-union acc
                       (for/set : (Setof Symbol) ([j (in-list alts)])
-                        (lang-symb-type (symb-split (syntax-e j)))))])))]))
-
-;; Split symbol into type and name.
-;; Allow to type things like (if e_1 e_2 e_3).
-(: symb-split (Symbol -> lang-symb))
-(define (symb-split symb)
-  (define symb* (regexp-match "([^_]*)(_(.*))?" (symbol->string symb)))
-  (match symb*
-    [(list _ s _ f)
-     #:when (string? s)
-     (lang-symb (string->symbol s)
-                (if (string? f)
-                    (string->symbol f)
-                    #f))]))
+                        (syntax-e j)))])))]))
 
 ;; Generate structs for a language.
 ;; Each non-terminal get's a struct, as well as each production.
@@ -110,7 +95,7 @@
      #`((struct #,sname () #:prefab)
         #,@(for/list : (Listof (Syntaxof Any)) ([non-t (in-list non-terminals)])
              (match non-t
-               [(non-terminal non-t-name non-t-sname alts productions parser)
+               [(non-terminal non-t-name non-t-sname alts productions)
                 #`(begin
                     (struct #,non-t-sname #,sname () #:prefab)
                     #,@(for/list : (Listof (Syntaxof Any)) ([rule (in-list productions)])
@@ -118,5 +103,5 @@
                            [(production name** sname** fields** pattern**)
                             #`(struct #,sname** #,non-t-sname
                                 #,(for/list : (Listof (Syntaxof Any)) ([f (in-list fields**)])
-                                    (production-field-name f))
+                                    (production-field-structname f))
                                 #:prefab)])))])))]))

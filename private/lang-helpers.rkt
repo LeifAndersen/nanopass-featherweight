@@ -14,6 +14,7 @@
                   set
                   set-union)
          "structs.rkt"
+         "helpers.rkt"
          (for-template racket/base))
 
 (provide extend-language
@@ -67,24 +68,24 @@
 
 ;; Collect identifiers in production rules.
 ;; These are turned into structs.
-(: collect-production-identifiers (lang -> (Setof Symbol))) ; wish was -> (Setof Identifier)
+(: collect-production-identifiers (lang -> (Setof Identifier)))
 (define (collect-production-identifiers language)
   (match language
     [(lang name sname entry terms non-terms)
      (set-union
-      (for/fold : (Setof Symbol) ([acc : (Setof Symbol) (set)])
-                                 ([i (in-list terms)])
+      (for/fold : (Setof Identifier) ([acc : (Setof Identifier) (make-immutable-identifier-set)])
+                                     ([i (in-list terms)])
         (match i
           [(terminal pred names)
            (set-union acc
-                      (for/set : (Setof Symbol) ([j (in-list names)]) (syntax-e j)))]))
-      (for/fold : (Setof Symbol) ([acc : (Setof Symbol) (set)])
-                                 ([i (in-list non-terms)])
+                      (make-immutable-identifier-set names))]))
+      (for/fold : (Setof Identifier) ([acc : (Setof Identifier) (make-immutable-identifier-set)])
+                                     ([i (in-list non-terms)])
         (match i
           [(non-terminal name sname alts productions)
            (set-union acc
-                      (for/set : (Setof Symbol) ([j (in-list alts)])
-                        (syntax-e j)))])))]))
+                      (make-immutable-identifier-set
+                       alts))])))]))
 
 ;; Generate structs for a language.
 ;; Each non-terminal get's a struct, as well as each production.

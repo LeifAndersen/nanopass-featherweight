@@ -18,6 +18,9 @@
 ;;
 ;; And a production rule is an s-expression containing terminals and non-terminals.
 
+(provide define-language
+         define-extended-language)
+
 (require (for-syntax syntax/parse
                      racket/syntax
                      racket/match
@@ -27,8 +30,6 @@
                      unstable/syntax
                      "structs.rkt"
                      "lang-helpers.rkt"))
-(provide define-language
-         define-extended-language)
 
 ;; Syntax-classes used for define-language
 (begin-for-syntax
@@ -130,7 +131,7 @@
 (define-for-syntax (prod->production stx production-identifiers l-name nt-name)
   (syntax-parse stx
     [x:id
-     #:when (set-member? production-identifiers (syntax-e #'x)) ; (wish was an identifier)
+     #:when (set-member? production-identifiers #'x) ; (wish was an identifier)
      (production #'x
                  (format-id l-name "~a:~a:~a" l-name nt-name #'x)
                  (list (production-field #'x (format-id stx "~a_~a" #'x (gensym)) 0))
@@ -153,11 +154,11 @@
      `(,@(collect-production-fields #'(subform ...) production-identifiers depth)
        ,@(collect-production-fields #'(rest ...) production-identifiers depth))]
     [(id:id (~datum ...) rest ...)
-     #:when (set-member? production-identifiers (syntax-e #'id)) ; (wish was identifier)
+     #:when (set-member? production-identifiers #'id) ; (wish was identifier)
      `(,(production-field #'id (format-id body "~a_~a" #'id (gensym)) (add1 depth))
        ,@(collect-production-fields #'(rest ...) production-identifiers depth))]
     [(id:id rest ...)
-     #:when (set-member? production-identifiers (syntax-e #'id)) ; (wish was symbol)
+     #:when (set-member? production-identifiers #'id) ; (wish was symbol)
      `(,(production-field #'id (format-id body "~a_~a" #'id (gensym)) depth)
        ,@(collect-production-fields #'(rest ...) production-identifiers depth))]
     [() '()]))

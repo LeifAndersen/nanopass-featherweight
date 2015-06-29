@@ -11,8 +11,8 @@
   #:terminals ((bool? (b)))
   (Expr (e)
    b
-   (when e_1 e_2)
-   (if e_1 e_2 e_3)))
+   (when e e)
+   (if e e e)))
 
 ; Language L1, remove when clause.
 ; (Consists of bool and if).

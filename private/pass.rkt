@@ -13,13 +13,14 @@
 ;;          ...)
 ;;    ...)
 
+(provide define-pass)
+
 (require (for-syntax syntax/parse
                      racket/syntax
                      racket/base
                      racket/pretty
                      "structs.rkt"
                      "pass-helpers.rkt"))
-(provide define-pass)
 
 ;; Syntax class for processors
 (begin-for-syntax

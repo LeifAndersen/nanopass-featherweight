@@ -27,15 +27,12 @@
                     Identifier
                     (U Identifier False)
                     Identifier
-                    (Listof terminal)
-                    (Listof terminal)
                     (Listof non-terminal/delta)
                     -> lang))
-(define (extend-language orig name sname entry +terms -terms non-terms)
+(define (extend-language orig name sname entry non-terms)
   (match orig
-    [(lang name* sname* entry* terminals* non-terminals*)
+    [(lang name* sname* entry* non-terminals*)
      (lang name sname entry
-           (append +terms (remove* -terms terminals*))
            (extend-non-terminals non-terminals* non-terms))]))
 
 ;; Given previous list of non-terminals, create list of non-terminals for new language.
@@ -52,17 +49,15 @@
 (: extend-non-terminal (non-terminal non-terminal/delta -> non-terminal))
 (define (extend-non-terminal non-term delta)
   (match* (non-term delta)
-    [((non-terminal name sname alts productions) (non-terminal/delta name* +alts +prod -prod))
+    [((non-terminal name sname productions) (non-terminal/delta name* +prod -prod))
      (non-terminal name*
                    #f
-                   (append +alts alts)
                    (for/list : (Listof production)
                              ([p (in-list
                                   (append +prod
                                           (remove* -prod
-                                                   (for/list : (Listof Syntax) ([p (in-list productions)])
-                                                     (production-pattern p))
-                                                   (lambda (x y)
+                                                   (map production-pattern productions)
+                                                   (lambda ([x : Syntax] [y : Syntax])
                                                      (equal? (syntax->datum x)
                                                              (syntax->datum y))))))])
                      (production #f #f null p)))]))
@@ -72,31 +67,20 @@
 (: collect-production-identifiers (lang -> (Setof Identifier)))
 (define (collect-production-identifiers language)
   (match language
-    [(lang name sname entry terms non-terms)
-     (set-union
-      (for/fold : (Setof Identifier) ([acc : (Setof Identifier) (immutable-free-id-set)])
-                                     ([i (in-list terms)])
-        (match i
-          [(terminal pred names)
-           (set-union acc
-                      (immutable-free-id-set names))]))
-      (for/fold : (Setof Identifier) ([acc : (Setof Identifier) (immutable-free-id-set)])
-                                     ([i (in-list non-terms)])
-        (match i
-          [(non-terminal name sname alts productions)
-           (set-union acc
-                      (immutable-free-id-set alts))])))]))
+    [(lang name sname entry non-terms)
+     (immutable-free-id-set
+      (map non-terminal-name non-terms))]))
 
 ;; Generate structs for a language.
 ;; Each non-terminal get's a struct, as well as each production.
 (: build-lang-structs (lang (Syntaxof Any) -> (Syntaxof Any)))
 (define (build-lang-structs language stx)
   (match language
-    [(lang name sname entry terminals non-terminals)
+    [(lang name sname entry non-terminals)
      #`((struct #,sname () #:prefab)
         #,@(for/list : (Listof (Syntaxof Any)) ([non-t (in-list non-terminals)])
              (match non-t
-               [(non-terminal non-t-name non-t-sname alts productions)
+               [(non-terminal non-t-name non-t-sname productions)
                 #`(begin
                     (struct #,non-t-sname #,sname () #:prefab)
                     #,@(for/list : (Listof (Syntaxof Any)) ([rule (in-list productions)])

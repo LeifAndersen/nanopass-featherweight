@@ -4,21 +4,19 @@
 
 (require "../main.rkt")
 
+(define Number number?)
+(define Symbol symbol?)
+(define Boolean boolean?)
+
 ; Initial language
 (define-language L0
-  #:terminals ((number? (x))
-               (symbol? (v)))
-  (Expr (e)
-        x
-        (+ x x)
-        (let ([v e] ...)
-     e)))
+  (Expr Number
+        (+ Expr Expr)
+        (let ([Symbol Expr] ...)
+          Expr)))
 
 ; Extended language
 (define-extended-language L1 L0
-  #:terminals (#:+ (boolean? (y))
-               #:- (symbol? (v))
-               #:+ (identifier? (i)))
-  (Expr (w)
-        #:+ y
-        #:+ (and w e)))
+  (Expr #:+ Boolean
+        #:- (+ Expr Expr)
+        #:+ (and Expr Expr)))

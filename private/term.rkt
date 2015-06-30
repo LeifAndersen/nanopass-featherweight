@@ -22,10 +22,7 @@
        (define nt (find-non-terminal language (attribute non-term)))
        (syntax-parse (attribute pattern)
          [(unquote #{x : type:id})
-          (match (find-term-non-term language (attribute type))
-            [(struct* terminal ([pred pred]
-                                [names names]))
-             #`(#,pred x)]
+          (match (find-non-terminal language (attribute type))
             [(struct* non-terminal ([name name]))
              #'(void)])]
          [(production:id pattern ...)

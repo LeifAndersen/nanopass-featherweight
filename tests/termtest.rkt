@@ -3,8 +3,7 @@
 (require "../main.rkt")
 
 (define-language L0
-  #:terminals ((symbol? (x)))
-  (Expr (e)
-        x))
+  (Expr integer?
+        (+ Expr Expr)))
 
 (define x (term (L0 Expr) ,#{'hello : symbol?}))

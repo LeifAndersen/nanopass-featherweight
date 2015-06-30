@@ -43,7 +43,7 @@
 (: find-nt (lang Identifier -> non-terminal))
 (define (find-nt language nt)
   (match language
-    [(lang name sname entry terminals non-terminals)
+    [(lang name sname entry non-terminals)
      (findf (lambda (x) (free-identifier=? nt (non-terminal-name x)))
             non-terminals)]))
 
@@ -53,7 +53,7 @@
 (define (build-body language processors formals body)
   (or body
       (match language
-        [(lang name sname entry terminals non-terminals)
+        [(lang name sname entry non-terminals)
          (define f (or (nt->processor entry processors)
                        (first processors)))
          #`(#,(processor-defname f) #,(first formals))])))
@@ -91,7 +91,7 @@
 (: find-production (Syntax non-terminal -> production))
 (define (find-production patt nt)
   (match nt
-    [(non-terminal name sname alts productions)
+    [(non-terminal name sname productions)
      (findf (lambda (prod)
               (match prod
                 [(production name sname fields patt*)
@@ -116,11 +116,10 @@
     [(production-field name sname depth)
      (findf (lambda (p)
               (match p
-                [(processor name defname int ont formals returns type body)
-                 (findf (lambda (alt)
-                          (equal? (syntax-e name)
-                                  (syntax-e alt)))
-                        (non-terminal-alts int))]))
+                [(struct* processor ([name name]
+                                     [int int]))
+                 (equal? (syntax-e name)
+                         (syntax-e (non-terminal-name int)))]))
             processors)]))
 
 ;; As meta-variables in patterns can have arbitrary ellipses depths,

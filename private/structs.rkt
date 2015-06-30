@@ -5,7 +5,6 @@
 (provide
  ;; Language
  (struct-out lang)
- (struct-out terminal)
  (struct-out non-terminal)
  (struct-out non-terminal/delta)
  (struct-out production)
@@ -24,17 +23,11 @@
 (struct lang ([name : Identifier]
               [structname : (U Identifier False)]
               [entry : Identifier]
-              [terminals : (Listof terminal)]
               [non-terminals : (Listof non-terminal)])
-  #:prefab)
-
-(struct terminal ([pred : Identifier];(-> Any Boolean)]
-                  [names : (Listof Identifier)])
   #:prefab)
 
 (struct non-terminal ([name : Identifier]
                       [structname : (U Identifier False)]
-                      [alts : (Listof Identifier)]
                       [productions : (Listof production)])
   #:prefab)
 
@@ -45,7 +38,6 @@
   #:prefab)
 
 (struct non-terminal/delta ([name : Identifier]
-                            [alts : (Listof Identifier)]
                             [+prod : (Listof Syntax)]
                             [-prod : (Listof Syntax)])
   #:prefab)

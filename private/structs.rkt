@@ -40,7 +40,7 @@
 
 (struct production ([name : (U Identifier False)]
                     [structname : (U Identifier False)]
-                    [fields : (Listof field)]
+                    [fields : (Listof production-field)]
                     [pattern : Syntax])
   #:prefab)
 

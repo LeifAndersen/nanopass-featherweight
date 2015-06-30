@@ -10,6 +10,7 @@
          racket/match
          racket/list
          unstable/syntax
+         syntax/id-set
          (only-in racket/set
                   set
                   set-union)
@@ -73,19 +74,18 @@
   (match language
     [(lang name sname entry terms non-terms)
      (set-union
-      (for/fold : (Setof Identifier) ([acc : (Setof Identifier) (make-immutable-identifier-set)])
+      (for/fold : (Setof Identifier) ([acc : (Setof Identifier) (immutable-free-id-set)])
                                      ([i (in-list terms)])
         (match i
           [(terminal pred names)
            (set-union acc
-                      (make-immutable-identifier-set names))]))
-      (for/fold : (Setof Identifier) ([acc : (Setof Identifier) (make-immutable-identifier-set)])
+                      (immutable-free-id-set names))]))
+      (for/fold : (Setof Identifier) ([acc : (Setof Identifier) (immutable-free-id-set)])
                                      ([i (in-list non-terms)])
         (match i
           [(non-terminal name sname alts productions)
            (set-union acc
-                      (make-immutable-identifier-set
-                       alts))])))]))
+                      (immutable-free-id-set alts))])))]))
 
 ;; Generate structs for a language.
 ;; Each non-terminal get's a struct, as well as each production.

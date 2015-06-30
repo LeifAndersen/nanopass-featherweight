@@ -4,9 +4,11 @@
 
 (require "private/lang.rkt"
          "private/pass.rkt"
+         "private/term.rkt"
          "private/compiler.rkt")
 
 (provide define-language
          define-extended-language
          define-pass
+         term
          define-compiler)

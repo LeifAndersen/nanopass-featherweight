@@ -17,8 +17,8 @@
 ; Extended language
 (define-extended-language L1 L0
   #:terminals (#:+ (boolean? (y))
-                   #:- (symbol? (v))
-                   #:+ (identifier? (i)))
+               #:- (symbol? (v))
+               #:+ (identifier? (i)))
   (Expr (w)
         #:+ y
         #:+ (and w e)))

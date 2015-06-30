@@ -8,7 +8,7 @@
 
 ; Language L0, consists of bools and if.
 (define-language L0
-  #:terminals ((bool? (b)))
+  #:terminals ((boolean? (b)))
   (Expr (e)
    b
    (when e e)
@@ -18,15 +18,16 @@
 ; (Consists of bool and if).
 (define-extended-language L1 L0
   (Expr (e)
-   #:- ((when e_1 e_2))))
+   #:- (when e e)))
 
 ; Remove one when blocks.
 (define-pass pass : L0 -> L1
   (Expr : Expr -> Expr
-   [(L0:Expr:when e_1 e_2)
-    (L1:Expr:if (pass:Expr e_1)
-                (pass:Expr e_2)
-                (L1:Expr:b #f))]))
+   [(term (L0 Expr) (when ,e1 ,e2))
+    (term (L0 Expr)
+          (if ,(pass:Expr e1)
+              ,(pass:Expr e2)
+              ,#f))]))
 
 ; ---------------------------------------------------
 ; Unit tests
